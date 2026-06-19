@@ -1,0 +1,73 @@
+# ─────────────────────────────────────────────────────────────
+# Secrets & credentials
+# ─────────────────────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets.json
+# OpenClaw gateway token / local config (if copied into repo)
+openclaw.json
+
+# ─────────────────────────────────────────────────────────────
+# Confidential IDX data
+# ─────────────────────────────────────────────────────────────
+*.sql
+*.csv
+*.tsv
+*.dump
+data/
+exports/
+embeddings/          # cached vector files can be large + derived from MLS data
+
+# ─────────────────────────────────────────────────────────────
+# Node.js
+# ─────────────────────────────────────────────────────────────
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.npm
+dist/
+build/
+*.tsbuildinfo
+
+# ─────────────────────────────────────────────────────────────
+# Python
+# ─────────────────────────────────────────────────────────────
+venv/
+.venv/
+env/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# ─────────────────────────────────────────────────────────────
+# IDE / editor
+# ─────────────────────────────────────────────────────────────
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# ─────────────────────────────────────────────────────────────
+# macOS / OS junk
+# ─────────────────────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+
+# ─────────────────────────────────────────────────────────────
+# Logs & local scratch
+# ─────────────────────────────────────────────────────────────
+*.log
+logs/
+tmp/
+scratch/
