@@ -122,7 +122,7 @@ EMAIL_PASSWORD=
 
 | Week | Module | Status |
 |------|--------|--------|
-| 0 | Environment setup, MySQL import, WhatsApp config | ⬜ |
+| 0 | Environment setup, MySQL import, WhatsApp config | [x] |
 | 1 | OpenClaw architecture: skills, sessions, tools, memory | ⬜ |
 | 2 | NL property search (query → structured filters) | ⬜ |
 | 3 | MySQL integration: parameterized queries, pagination | ⬜ |
