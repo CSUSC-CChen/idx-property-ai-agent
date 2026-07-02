@@ -19,7 +19,7 @@ openclaw.json
 *.dump
 data/
 exports/
-embeddings/          # cached vector files can be large + derived from MLS data
+embeddings/
 
 # ─────────────────────────────────────────────────────────────
 # Node.js
