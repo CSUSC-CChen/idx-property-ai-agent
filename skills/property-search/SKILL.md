@@ -1,63 +1,40 @@
 ---
 name: property-search
-description: Parse a free-text real-estate request into a structured property filter object for searching active MLS listings.
+description: Search active California MLS listings from a natural-language property request and return matching homes. Use for any home, condo, or property search.
 ---
 
-# Property Search — Query Parsing
+# Property Search
 
-When the user describes the property they want in natural language, convert their
-request into a structured filter object that can be used to search active MLS
-listings (the `rets_property` table). This skill handles parsing only — turning
-text into filters. Running those filters against the database is a separate step.
+Use this skill for ANY request to find homes, condos, townhomes, or other
+properties in California — for example "3 bed condos in Irvine under 1M",
+"houses in Pasadena with a pool", or "listings in San Diego". This is the
+required path for property searches. Do not use web search or external sites
+like Zillow or Redfin for listing data.
 
-## Example
+## How it works
 
-User: "Show me 3-bedroom condos in Irvine under $1.5M with a pool."
+The search reads the user's request, parses it into structured filters, and
+queries the local MLS database (`rets_property`) for matching active listings.
 
-Filter object:
+## How to run a search
 
-```json
-{
-  "city": "Irvine",
-  "maxPrice": 1500000,
-  "beds": 3,
-  "baths": null,
-  "sqft": null,
-  "type": "Condominium",
-  "pool": "True",
-  "hasView": null,
-  "maxHoa": null
-}
-```
-
-## Fields to extract (and their rets_property columns)
-
-| Filter     | Column          | Meaning                       |
-|------------|-----------------|-------------------------------|
-| `city`     | `L_City`        | exact city match              |
-| `maxPrice` | `L_SystemPrice` | price cap (<=)                |
-| `beds`     | `L_Keyword2`    | minimum bedrooms (>=)         |
-| `baths`    | `LM_Dec_3`      | minimum bathrooms (>=, halves)|
-| `sqft`     | `LM_Int2_3`     | minimum square footage (>=)   |
-| `type`     | `L_Type_`       | property subtype              |
-| `pool`     | `PoolPrivateYN` | "True" if a pool is wanted    |
-| `hasView`  | `ViewYN`        | "True" if a view is wanted    |
-| `maxHoa`   | `AssociationFee`| HOA fee cap (<=)              |
-
-## Rules
-
-- Only fill fields the user actually specified. Leave everything else `null`.
-- `beds`, `baths`, and `sqft` are minimums; `maxPrice` and `maxHoa` are caps.
-- Respect negation: "without a pool" leaves `pool` as `null`, not `"True"`.
-- Normalize property type to RESO values: `Condominium`, `Townhouse`,
-  `SingleFamilyResidence`, `UnimprovedLand`.
-- Do not invent a `type` for generic words like "home" or "house".
-
-## Reference implementation
-
-A deterministic parser lives alongside this file in `parsePropertyQuery.ts`, with
-a validation suite in `parsePropertyQuery.test.ts` (13 test queries). Run it with:
+When the user asks for a property search, use the `exec` tool to run this
+command, replacing QUERY with the user's exact request text (keep the quotes):
 
 ```bash
-npx tsx parsePropertyQuery.test.ts
+cd ~/Desktop/idx-property-ai-agent && ./node_modules/.bin/tsx db/agentSearch.ts "QUERY"
 ```
+
+Then return the command's printed output to the user exactly as printed.
+
+Rules:
+- Return only what the command prints. Do not invent, add, or supplement
+  listings from any other source.
+- If it prints "No active listings matched", relay that and suggest loosening
+  one filter (for example, drop the pool or raise the price).
+- Never fall back to web search or external websites for property data.
+
+## Notes
+
+- The database is a fixed MLS snapshot, so listing status reflects the export
+  date, not today's live market.
