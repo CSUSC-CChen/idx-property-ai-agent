@@ -1,0 +1,10 @@
+{
+  "devDependencies": {
+    "@types/node": "^26.1.0",
+    "tsx": "^4.23.0"
+  },
+  "dependencies": {
+    "dotenv": "^17.4.2",
+    "mysql2": "^3.22.5"
+  }
+}
