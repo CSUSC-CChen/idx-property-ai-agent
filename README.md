@@ -125,7 +125,7 @@ EMAIL_PASSWORD=
 | 0 | Environment setup, MySQL import, WhatsApp config | ✅ |
 | 1 | OpenClaw architecture: skills, sessions, tools, memory | ✅ |
 | 2 | NL property search (query → structured filters) | ✅ |
-| 3 | MySQL integration: parameterized queries, pagination | ⬜ |
+| 3 | MySQL integration: parameterized queries, pagination | ✅ |
 | 4 | Conversational agent: multi-turn session memory | ⬜ |
 | 5 | Market analytics over `california_sold` | ⬜ |
 | 6 | Embeddings & vector search (semantic matching) | ⬜ |
