@@ -1,40 +1,49 @@
 ---
 name: property-search
-description: Search active California MLS listings from a natural-language property request and return matching homes. Use for any home, condo, or property search.
+description: Search active California MLS listings from a natural-language property request and return matching homes. Use for any home, condo, or property search, and for follow-up messages that refine an ongoing search.
 ---
 
-# Property Search
+# Property Search (Conversational)
 
 Use this skill for ANY request to find homes, condos, townhomes, or other
 properties in California — for example "3 bed condos in Irvine under 1M",
-"houses in Pasadena with a pool", or "listings in San Diego". This is the
-required path for property searches. Do not use web search or external sites
-like Zillow or Redfin for listing data.
+"houses in Pasadena with a pool", or "listings in San Diego".
 
-## How it works
+Also use it for FOLLOW-UP messages in an ongoing property conversation, even
+when they are short and would not look like a search on their own — for
+example "under $1.2M", "make it 4 beds", "what about San Diego", "with a
+view", or "start over". The search remembers the conversation, so these
+messages refine the previous search rather than starting a new one.
 
-The search reads the user's request, parses it into structured filters, and
-queries the local MLS database (`rets_property`) for matching active listings.
+This is the required path for property searches. Do not use web search or
+external sites like Zillow or Redfin for listing data.
 
 ## How to run a search
 
-When the user asks for a property search, use the `exec` tool to run this
-command, replacing QUERY with the user's exact request text (keep the quotes):
+Use the `exec` tool to run this command. Replace MESSAGE with the user's exact
+message text, and USER_ID with the sender's identifier (their phone number if
+you have it; otherwise use `default`). Keep the quotes.
 
 ```bash
-cd ~/Desktop/idx-property-ai-agent && ./node_modules/.bin/tsx db/agentSearch.ts "QUERY"
+cd ~/Desktop/idx-property-ai-agent && ./node_modules/.bin/tsx db/agentSearchSession.ts "USER_ID" "MESSAGE"
 ```
 
-Then return the command's printed output to the user exactly as printed.
+Return the command's printed output to the user exactly as printed.
 
 Rules:
 - Return only what the command prints. Do not invent, add, or supplement
   listings from any other source.
-- If it prints "No active listings matched", relay that and suggest loosening
-  one filter (for example, drop the pool or raise the price).
+- The command may reply with a follow-up question (for example "What's your
+  budget?") instead of listings. That is expected — relay the question as-is
+  and pass the user's answer back into the same command on the next turn.
+- Always use the same USER_ID for the same person across the conversation, so
+  their remembered search is not lost.
 - Never fall back to web search or external websites for property data.
 
 ## Notes
 
 - The database is a fixed MLS snapshot, so listing status reflects the export
   date, not today's live market.
+- "pool" maps to a private pool (`PoolPrivateYN`), which is rare for condos —
+  most condo pools are shared community amenities.
+- The user can say "start over" to clear their remembered search.
