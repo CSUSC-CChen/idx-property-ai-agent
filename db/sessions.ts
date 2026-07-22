@@ -32,6 +32,7 @@ const EMPTY_FILTERS: PropertyFilters = {
   pool: null,
   hasView: null,
   maxHoa: null,
+  zip: null,
 };
 
 function newSession(): UserSession {

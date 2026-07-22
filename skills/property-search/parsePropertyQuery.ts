@@ -26,6 +26,7 @@ export interface PropertyFilters {
   pool: "True" | null;
   hasView: "True" | null;
   maxHoa: number | null;
+  zip: number | null;
 }
 
 // Ordered so more specific / multi-word types are tested before generic ones.
@@ -55,7 +56,14 @@ function toNumber(raw: string, suffix?: string): number {
 
 export function parsePropertyQuery(query: string): PropertyFilters {
   const q = query.trim();
-
+  // Zip: a standalone 5-digit code. Pulled out FIRST and stripped from the
+  // working text so the price/beds/sqft regexes below can't grab those digits.
+  let zipWorking = q;
+  const zipMatch = q.match(/\b(\d{5})\b/);
+  const zip = zipMatch ? Number(zipMatch[1]) : null;
+  if (zipMatch) {
+    zipWorking = q.replace(zipMatch[0], " ");
+  }
   // City: after "in / near / around", capture words until a boundary keyword,
   // a number, or punctuation. Handles multi-word cities (Newport Beach, San Diego).
   const cityMatch = q.match(
@@ -64,7 +72,7 @@ export function parsePropertyQuery(query: string): PropertyFilters {
   const city = cityMatch ? toTitleCase(cityMatch[1]) : null;
 
   // Pull HOA out first, then strip it so the price parser cannot grab the HOA number.
-  let working = q;
+  let working = zipWorking;
   let maxHoa: number | null = null;
   const hoaMatch = working.match(
     /(?:hoa|association(?:\s+fee|\s+dues)?)\s*(?:fee)?\s*(?:under|below|max(?:imum)?|up to|of|<)?\s*\$?\s*([\d,]+)|\$?\s*([\d,]+)\s*(?:\/mo|per month|monthly|month)?\s*(?:in\s+)?hoa\b/i
@@ -82,15 +90,15 @@ export function parsePropertyQuery(query: string): PropertyFilters {
   const maxPrice = priceMatch ? toNumber(priceMatch[1], priceMatch[2]) : null;
 
   // Bedrooms (minimum)
-  const bedsMatch = q.match(/(\d+)\s*\+?\s*-?\s*(?:bedrooms|bedroom|beds|bed|br|bd)\b/i);
+  const bedsMatch = zipWorking.match(/(\d+)\s*\+?\s*-?\s*(?:bedrooms|bedroom|beds|bed|br|bd)\b/i);
   const beds = bedsMatch ? Number(bedsMatch[1]) : null;
 
   // Bathrooms (minimum, supports half-baths e.g. 2.5)
-  const bathsMatch = q.match(/(\d+(?:\.5)?)\s*\+?\s*-?\s*(?:bathrooms|bathroom|baths|bath|ba)\b/i);
+  const bathsMatch = zipWorking.match(/(\d+(?:\.5)?)\s*\+?\s*-?\s*(?:bathrooms|bathroom|baths|bath|ba)\b/i);
   const baths = bathsMatch ? Number(bathsMatch[1]) : null;
 
   // Square footage (minimum)
-  const sqftMatch = q.match(/([\d,]+)\s*(?:sq\.?\s*ft|sqft|square\s*feet|square\s*foot)\b/i);
+  const sqftMatch = zipWorking.match(/([\d,]+)\s*(?:sq\.?\s*ft|sqft|square\s*feet|square\s*foot)\b/i);
   const sqft = sqftMatch ? Number(sqftMatch[1].replace(/,/g, "")) : null;
 
   // Property type
@@ -109,5 +117,5 @@ export function parsePropertyQuery(query: string): PropertyFilters {
   const viewNeg = /\b(?:no|without|don'?t\s+want|not?)\s+(?:a\s+)?view/i.test(q);
   const hasView = !viewNeg && /\bview\b/i.test(q) ? "True" : null;
 
-  return { city, maxPrice, beds, baths, sqft, type, pool, hasView, maxHoa };
+  return { city, maxPrice, beds, baths, sqft, type, pool, hasView, maxHoa, zip };
 }
