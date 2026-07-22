@@ -52,7 +52,9 @@ function describeFilters(f: ReturnType<typeof parsePropertyQuery>): string {
   if (f.beds) parts.push(`${f.beds}+ bed`);
   if (f.baths) parts.push(`${f.baths}+ bath`);
   if (f.type) parts.push(f.type);
-  if (f.city) parts.push(`in ${f.city}`);
+  if (f.city && f.zip) parts.push(`in ${f.city} ${f.zip}`);
+  else if (f.city) parts.push(`in ${f.city}`);
+  else if (f.zip) parts.push(`in ${f.zip}`);
   if (f.maxPrice) parts.push(`under ${money(f.maxPrice)}`);
   if (f.sqft) parts.push(`${f.sqft}+ sqft`);
   if (f.pool) parts.push("private pool");
@@ -85,16 +87,17 @@ async function main() {
   // Only ask before the first search. Once we've shown results, every new
   // message just refines them — no more interrogation.
   if (!session.hasSearched) {
-    if (!session.filters.city) {
+    if (!session.filters.city && !session.filters.zip) {
       session.conversationStep = 1;
       saveSession(userId, session);
-      console.log("Which city are you looking in?");
+      console.log("Which city or zip code are you looking in?");
       return;
     }
     if (!session.filters.maxPrice) {
       session.conversationStep = 2;
       saveSession(userId, session);
-      console.log(`Got it — ${session.filters.city}. What's your budget?`);
+      const loc = session.filters.city ?? `zip ${session.filters.zip}`;
+      console.log(`Got it — ${loc}. What's your budget?`);
       return;
     }
     if (!session.filters.type && !session.filters.beds) {

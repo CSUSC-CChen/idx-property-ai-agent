@@ -61,6 +61,7 @@ export async function searchActiveListings(
   if (filters.pool)     { sql += " AND PoolPrivateYN = ?";  params.push(filters.pool); }
   if (filters.hasView)  { sql += " AND ViewYN = ?";         params.push(filters.hasView); }
   if (filters.maxHoa)   { sql += " AND AssociationFee <= ?"; params.push(filters.maxHoa); }
+  if (filters.zip) { sql += " AND L_Zip = ?"; params.push(filters.zip); }
 
   // LIMIT/OFFSET are inlined as validated integers on purpose: mysql2 prepared
   // statements can reject placeholders in LIMIT/OFFSET. Coercing to integers
