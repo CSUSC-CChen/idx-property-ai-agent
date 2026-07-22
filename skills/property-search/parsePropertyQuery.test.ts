@@ -17,6 +17,7 @@ const NULL_FILTERS: PropertyFilters = {
   pool: null,
   hasView: null,
   maxHoa: null,
+  zip: null,
 };
 
 interface Case {
@@ -76,6 +77,26 @@ const cases: Case[] = [
   {
     query: "single family in Anaheim, no more than $750000",
     expected: { city: "Anaheim", type: "SingleFamilyResidence", maxPrice: 750000 },
+  },
+    {
+    query: "homes in 92602",
+    expected: { zip: 92602 },
+  },
+  {
+    query: "3 bed condos in 90210 under 2M",
+    expected: { zip: 90210, beds: 3, maxPrice: 2000000, type: "Condominium" },
+  },
+  {
+    query: "condos in Irvine 92602",
+    expected: { city: "Irvine", type: "Condominium", zip: 92602 },
+  },
+  {
+    query: "3 bedroom homes in 90210 with a pool",
+    expected: { zip: 90210, beds: 3, pool: "True" },
+  },
+  {
+    query: "townhomes near 91776 under 900k",
+    expected: { zip: 91776, type: "Townhouse", maxPrice: 900000 },
   },
 ];
 
