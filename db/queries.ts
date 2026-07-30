@@ -33,11 +33,13 @@ export interface ListingRow {
   LO1_OrganizationName: string;
 }
 
-export async function searchActiveListings(
+// Pure query builder — no database access. Extracted from searchActiveListings
+// so the SQL and parameters can be unit-tested without a live MySQL connection.
+export function buildListingQuery(
   filters: PropertyFilters,
   page = 1,
   limit = 10
-): Promise<ListingRow[]> {
+): { sql: string; params: any[] } {
   let sql = `
     SELECT
       L_ListingID, L_DisplayId, L_Address, L_City, L_Zip,
@@ -52,7 +54,7 @@ export async function searchActiveListings(
   `;
   const params: any[] = [];
 
-  if (filters.city)     { sql += " AND L_City = ?";        params.push(filters.city); }
+  if (filters.city)     { sql += " AND L_City = ?";         params.push(filters.city); }
   if (filters.maxPrice) { sql += " AND L_SystemPrice <= ?"; params.push(filters.maxPrice); }
   if (filters.beds)     { sql += " AND L_Keyword2 >= ?";    params.push(filters.beds); }
   if (filters.baths)    { sql += " AND LM_Dec_3 >= ?";      params.push(filters.baths); }
@@ -61,15 +63,24 @@ export async function searchActiveListings(
   if (filters.pool)     { sql += " AND PoolPrivateYN = ?";  params.push(filters.pool); }
   if (filters.hasView)  { sql += " AND ViewYN = ?";         params.push(filters.hasView); }
   if (filters.maxHoa)   { sql += " AND AssociationFee <= ?"; params.push(filters.maxHoa); }
-  if (filters.zip) { sql += " AND L_Zip = ?"; params.push(filters.zip); }
+  if (filters.zip)      { sql += " AND L_Zip = ?";          params.push(filters.zip); }
 
   // LIMIT/OFFSET are inlined as validated integers on purpose: mysql2 prepared
-  // statements can reject placeholders in LIMIT/OFFSET. Coercing to integers
-  // keeps this injection-safe. limit is capped at 50 (handbook safety rule).
+  // statements can reject placeholders there. Coercing to integers keeps this
+  // injection-safe. limit is capped at 50 (handbook safety rule).
   const safeLimit = Math.max(1, Math.min(50, Math.trunc(limit)));
   const safeOffset = Math.max(0, Math.trunc((page - 1) * limit));
   sql += ` ORDER BY L_SystemPrice ASC LIMIT ${safeLimit} OFFSET ${safeOffset}`;
 
+  return { sql, params };
+}
+
+export async function searchActiveListings(
+  filters: PropertyFilters,
+  page = 1,
+  limit = 10
+): Promise<ListingRow[]> {
+  const { sql, params } = buildListingQuery(filters, page, limit);
   return query<ListingRow>(sql, params);
 }
 

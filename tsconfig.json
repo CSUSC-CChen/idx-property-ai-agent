@@ -1,0 +1,26 @@
+{
+  "compilerOptions": {
+    // ES2020 target: required for Map/Set spread like [...byMonth.keys()].
+    // Without this, TypeScript defaults to ES5 and raises TS2802.
+    "target": "ES2020",
+    "lib": ["ES2020"],
+
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+
+    // Required for `import mysql from "mysql2/promise"`. mysql2 is a CommonJS
+    // module with no ES default export; without interop, TypeScript raises
+    // TS1192 ("has no default export"). tsx/esbuild already does this at
+    // runtime, which is why the scripts run fine even when the editor complains.
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "strict": false,
+    "noEmit": true,
+    "types": ["node"]
+  },
+  "include": ["db/**/*.ts", "skills/**/*.ts"],
+  "exclude": ["node_modules"]
+}
