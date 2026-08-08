@@ -9,7 +9,7 @@
     "openai": "^7.1.0"
   },
   "scripts": {
-    "test": "tsx skills/property-search/parsePropertyQuery.test.ts && tsx db/queries.test.ts && tsx db/sessions.test.ts && tsx db/marketStats.test.ts",
+    "test": "tsx skills/property-search/parsePropertyQuery.test.ts && tsx db/queries.test.ts && tsx db/sessions.test.ts && tsx db/marketStats.test.ts && tsx db/recommend.test.ts",
     "typecheck": "tsc --noEmit"
   }
 }
