@@ -129,7 +129,7 @@ EMAIL_PASSWORD=
 | 4 | Conversational agent: multi-turn session memory | ✅ |
 | 5 | Market analytics over `california_sold` | ✅ |
 | 6 | Embeddings & vector search (semantic matching) | ✅ |
-| 7 | Recommendation engine (hybrid scoring) | ⬜ |
+| 7 | Recommendation engine (hybrid scoring) | ✅ |
 | 8 | RAG pipeline (MLS field definitions, terminology) | ⬜ |
 | 9 | Multi-agent orchestration (coordinator routing) | ⬜ |
 | 10 | WhatsApp communication layer (end-to-end) | ⬜ |
