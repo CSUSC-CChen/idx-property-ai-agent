@@ -121,7 +121,7 @@ EMAIL_PASSWORD=
 ## 12-Week Roadmap
 
 | Week | Module | Status |
-|------|--------|--------|
+|------|--------|-------|
 | 0 | Environment setup, MySQL import, WhatsApp config | ✅ |
 | 1 | OpenClaw architecture: skills, sessions, tools, memory | ✅ |
 | 2 | NL property search (query → structured filters) | ✅ |
@@ -130,7 +130,7 @@ EMAIL_PASSWORD=
 | 5 | Market analytics over `california_sold` | ✅ |
 | 6 | Embeddings & vector search (semantic matching) | ✅ |
 | 7 | Recommendation engine (hybrid scoring) | ✅ |
-| 8 | RAG pipeline (MLS field definitions, terminology) | ⬜ |
+| 8 | RAG pipeline (MLS field definitions, terminology) | ✅ |
 | 9 | Multi-agent orchestration (coordinator routing) | ⬜ |
 | 10 | WhatsApp communication layer (end-to-end) | ⬜ |
 | 11 | Email agents with human-in-the-loop approval gate | ⬜ |
