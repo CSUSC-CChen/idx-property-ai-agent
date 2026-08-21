@@ -1,22 +1,18 @@
-// agentSearchSession.ts — Week 4
+// agentSearchSession.ts — Week 4 (refactored for Week 9)
 // Multi-turn conversational property search.
-//
-// Replaces the Week 3 one-shot runner. Instead of treating every message as a
-// fresh search, it remembers what the user has already told us, asks a
-// follow-up question when key details are missing, and refines results as the
-// conversation continues.
 //
 //   ./node_modules/.bin/tsx db/agentSearchSession.ts "<userId>" "<message>"
 //
-// Example flow:
-//   "Find homes in Irvine"            -> "What's your budget?"
-//   "Under $1.2M"                     -> "Condo, townhome, or single family?"
-//   "Single family with 3 beds"       -> [returns listings]
-//   "Actually make it 4 beds"         -> [refines and re-searches]
+// WEEK 9 CHANGES:
+// - main() -> exported propertySearchAgent(message, userId), returning an
+//   AgentResult instead of console.log-ing. The follow-up questions ("What's
+//   your budget?") become { kind: "message" } results rather than side effects.
+// - closePool() removed: the process owner closes the pool, not the agent.
+// - CLI guarded by require.main === module so importing doesn't run it.
+// - Card formatting moved to agentFormat.ts.
 
-import "dotenv/config";
 import { parsePropertyQuery } from "../skills/property-search/parsePropertyQuery";
-import { searchActiveListings, ListingRow } from "./queries";
+import { searchActiveListings } from "./queries";
 import { closePool } from "./db";
 import {
   getSession,
@@ -24,25 +20,11 @@ import {
   clearSession,
   mergeFilters,
   isResetRequest,
-  filterCount,
 } from "./sessions";
+import { AgentResult } from "./agentTypes";
 
 function money(n: number): string {
   return n != null ? `$${Number(n).toLocaleString()}` : "N/A";
-}
-
-// WhatsApp renders *single asterisks* as bold.
-function whatsappCard(r: ListingRow): string {
-  const beds = r.beds ?? "?";
-  const baths = r.baths ?? "?";
-  const sqft = r.sqft != null ? `${Number(r.sqft).toLocaleString()} sqft` : "sqft N/A";
-  const photos = r.PhotoCount != null ? `${r.PhotoCount} photos` : "no photos";
-  const pool = r.PoolPrivateYN === "True" ? " · private pool" : "";
-  return (
-    `*${r.L_Address}, ${r.L_City} ${r.L_Zip}*\n` +
-    `${money(r.price)} · ${beds} bd / ${baths} ba · ${sqft}\n` +
-    `${r.type} · ${r.DaysOnMarket ?? "?"} days on market${pool} · ${photos}`
-  );
 }
 
 // A short readable summary of what we're currently searching for, so the user
@@ -63,89 +45,84 @@ function describeFilters(f: ReturnType<typeof parsePropertyQuery>): string {
   return parts.join(", ");
 }
 
-async function main() {
-  const userId = (process.argv[2] || "default").trim();
-  const message = process.argv.slice(3).join(" ").trim();
+export async function propertySearchAgent(
+  message: string,
+  userId: string
+): Promise<AgentResult> {
+  const msg = (message || "").trim();
+  const uid = (userId || "default").trim();
 
-  if (!message) {
-    console.log("What are you looking for? For example: \"3 bed condos in Irvine under 1M\".");
-    return;
+  if (!msg) {
+    return {
+      kind: "message",
+      text: 'What are you looking for? For example: "3 bed condos in Irvine under 1M".',
+    };
   }
 
-  // "Start over" wipes the remembered filters.
-  if (isResetRequest(message)) {
-    clearSession(userId);
-    console.log("Starting fresh. What city are you looking in?");
-    return;
+  if (isResetRequest(msg)) {
+    clearSession(uid);
+    return { kind: "message", text: "Starting fresh. What city are you looking in?" };
   }
 
-  const session = getSession(userId);
-  const incoming = parsePropertyQuery(message);
+  const session = getSession(uid);
+  const incoming = parsePropertyQuery(msg);
   session.filters = mergeFilters(session.filters, incoming);
 
-  // --- Follow-up questions -------------------------------------------------
-  // Only ask before the first search. Once we've shown results, every new
-  // message just refines them — no more interrogation.
+  // Follow-up questions — only before the first search. Once results have been
+  // shown, every new message refines them instead of interrogating further.
   if (!session.hasSearched) {
     if (!session.filters.city && !session.filters.zip) {
       session.conversationStep = 1;
-      saveSession(userId, session);
-      console.log("Which city or zip code are you looking in?");
-      return;
+      saveSession(uid, session);
+      return { kind: "message", text: "Which city or zip code are you looking in?" };
     }
     if (!session.filters.maxPrice) {
       session.conversationStep = 2;
-      saveSession(userId, session);
+      saveSession(uid, session);
       const loc = session.filters.city ?? `zip ${session.filters.zip}`;
-      console.log(`Got it — ${loc}. What's your budget?`);
-      return;
+      return { kind: "message", text: `Got it — ${loc}. What's your budget?` };
     }
     if (!session.filters.type && !session.filters.beds) {
       session.conversationStep = 3;
-      saveSession(userId, session);
-      console.log(
-        "Any preferences — condo, townhome, or single family? And how many bedrooms?"
-      );
-      return;
+      saveSession(uid, session);
+      return {
+        kind: "message",
+        text: "Any preferences — condo, townhome, or single family? And how many bedrooms?",
+      };
     }
   }
 
-  // --- Search --------------------------------------------------------------
-  // Save the merged filters BEFORE querying. If the database call fails, we
-  // must not lose what the user just told us — otherwise a transient DB error
-  // silently erases their last message from the conversation.
+  // Save merged filters BEFORE querying: if the DB call fails we must not lose
+  // what the user just told us, or a transient error silently erases their
+  // last message from the conversation.
   session.hasSearched = true;
   session.conversationStep += 1;
-  saveSession(userId, session);
+  saveSession(uid, session);
 
   const rows = await searchActiveListings(session.filters, 1, 5);
-  const summary = describeFilters(session.filters);
 
   session.lastResultIds = rows.map((r) => String(r.L_ListingID));
-  saveSession(userId, session);
+  saveSession(uid, session);
 
-  if (rows.length === 0) {
-    console.log(
-      `No active listings match ${summary}.\n\n` +
-        `Try loosening one thing — a higher budget, fewer beds, or dropping the pool. ` +
-        `Say "start over" to begin a new search.`
-    );
-    await closePool();
-    return;
-  }
-
-  const header = `Found ${rows.length} listing${rows.length === 1 ? "" : "s"} — ${summary}:`;
-  const body = rows.map(whatsappCard).join("\n\n");
-  const footer =
-    filterCount(session.filters) < 9
-      ? `\n\nWant to narrow it down? You can add things like a minimum square footage, a view, or an HOA cap.`
-      : "";
-
-  console.log(`${header}\n\n${body}${footer}`);
-  await closePool();
+  return {
+    kind: "listings",
+    query: describeFilters(session.filters),
+    filters: session.filters,
+    listings: rows,
+  };
 }
 
-main().catch((err) => {
-  console.error("Search failed:", err.message);
-  process.exit(1);
-});
+if (require.main === module) {
+  (async () => {
+    const userId = (process.argv[2] || "default").trim();
+    const message = process.argv.slice(3).join(" ").trim();
+    const result = await propertySearchAgent(message, userId);
+    const { formatResult } = await import("./agentFormat");
+    console.log(formatResult(result));
+  })()
+    .catch((err) => {
+      console.error("Search failed:", err.message);
+      process.exitCode = 1;
+    })
+    .finally(() => closePool().catch(() => {}));
+}

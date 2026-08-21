@@ -1,19 +1,19 @@
-// semanticSearch.ts — Week 6
-// Semantic ("vibe") property search. Takes a free-text description and returns
-// the closest active listings by embedding similarity to their L_Remarks.
+// semanticSearch.ts — Week 6 (refactored for Week 9)
+// Semantic ("vibe") property search over L_Remarks embeddings.
 //
-//   ./node_modules/.bin/tsx db/semanticSearch.ts "charming craftsman with character and mountain views"
+//   ./node_modules/.bin/tsx db/semanticSearch.ts "charming craftsman with character"
 //
-// HYBRID DESIGN: any structured hints the parser finds (city, price, beds, type)
-// first NARROW the candidate pool via SQL, then embeddings RANK what's left by
-// meaning. This keeps embedding cost bounded (we never embed all 53K listings)
-// and makes results better — semantic ranking within the right city beats
-// semantic ranking across the whole state.
+// WEEK 9 CHANGES: exported semanticAgent(query) returning an AgentResult;
+// closePool() removed; formatting moved to agentFormat.ts; CLI guarded.
+//
+// HYBRID DESIGN (unchanged): structured hints from the parser NARROW the
+// candidate pool via SQL, then embeddings RANK what's left by meaning. This
+// bounds embedding cost and improves results — semantic ranking within the
+// right city beats semantic ranking across the whole state.
 
-import "dotenv/config";
 import { parsePropertyQuery } from "../skills/property-search/parsePropertyQuery";
 import { query, closePool } from "./db";
-import { formatCard, ListingRow } from "./queries";
+import { ListingRow } from "./queries";
 import {
   buildListingText,
   embedText,
@@ -23,22 +23,22 @@ import {
   rankBySimilarity,
   EmbeddableRow,
 } from "./embeddings";
+import { AgentResult } from "./agentTypes";
 
 const MAX_CANDIDATES = 400; // bounds embedding cost/latency per query
 const EMBED_BATCH = 128;
 
 type CandidateRow = ListingRow & EmbeddableRow & { L_Remarks: string };
 
-async function main() {
-  const q = process.argv.slice(2).join(" ").trim();
+export async function semanticAgent(userQuery: string): Promise<AgentResult> {
+  const q = (userQuery || "").trim();
   if (!q) {
-    console.log(
-      'Describe what you\'re looking for — e.g. "charming craftsman with character and mountain views".'
-    );
-    return;
+    return {
+      kind: "message",
+      text: 'Describe what you\'re looking for — e.g. "charming craftsman with character and mountain views".',
+    };
   }
 
-  // Structured hints narrow the pool (all optional).
   const hint = parsePropertyQuery(q);
 
   let sql = `
@@ -65,11 +65,10 @@ async function main() {
   const rows = await query<CandidateRow>(sql, params);
 
   if (rows.length === 0) {
-    console.log(
-      `No active listings with descriptions matched those constraints. Try naming a city or loosening the filters.`
-    );
-    await closePool();
-    return;
+    return {
+      kind: "message",
+      text: "No active listings with descriptions matched those constraints. Try naming a city or loosening the filters.",
+    };
   }
 
   // Ensure every candidate has an embedding (cache-aware; only new ones cost).
@@ -79,31 +78,31 @@ async function main() {
     for (let i = 0; i < missing.length; i += EMBED_BATCH) {
       const slice = missing.slice(i, i + EMBED_BATCH);
       const vecs = await embedBatch(slice.map((r) => buildListingText(r)));
-      slice.forEach((r, j) => {
-        cache[String(r.L_ListingID)] = vecs[j];
-      });
+      slice.forEach((r, j) => { cache[String(r.L_ListingID)] = vecs[j]; });
     }
     saveCache(cache);
   }
 
-  // Embed the query and rank.
   const queryVec = await embedText(q);
-  const items = rows.map((r) => ({
-    vector: cache[String(r.L_ListingID)] || [],
-    row: r,
-  }));
+  const items = rows.map((r) => ({ vector: cache[String(r.L_ListingID)] || [], row: r }));
   const top = rankBySimilarity(queryVec, items, 5);
 
-  await closePool();
-
-  const header = `Top ${top.length} closest match${top.length === 1 ? "" : "es"} for "${q}":`;
-  const body = top
-    .map(({ row, score }) => `${formatCard(row)}\n  match: ${Math.round(score * 100)}%`)
-    .join("\n\n");
-  console.log(`${header}\n\n${body}`);
+  return {
+    kind: "semantic",
+    query: q,
+    matches: top.map(({ row, score }) => ({ row: row as ListingRow, score })),
+  };
 }
 
-main().catch((err) => {
-  console.error("Semantic search failed:", err.message);
-  process.exit(1);
-});
+if (require.main === module) {
+  (async () => {
+    const result = await semanticAgent(process.argv.slice(2).join(" ").trim());
+    const { formatResult } = await import("./agentFormat");
+    console.log(formatResult(result));
+  })()
+    .catch((err) => {
+      console.error("Semantic search failed:", err.message);
+      process.exitCode = 1;
+    })
+    .finally(() => closePool().catch(() => {}));
+}
