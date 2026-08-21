@@ -1,0 +1,65 @@
+---
+name: idx-property-assistant
+description: California MLS assistant — search active listings, answer market questions for any city or zip, find comparable homes to a listing, search by description or vibe, and explain real estate terminology. Use for ANY property, market, or real-estate-terminology request, including short follow-up messages in an ongoing conversation.
+---
+
+# IDX Property Assistant
+
+Use this skill for **every** real estate request. A single orchestrator reads the
+message, decides which specialist agent (or agents) should handle it, and returns
+one formatted reply. You do not need to choose between skills — routing happens
+inside the command.
+
+This covers:
+
+- **Property search** — "3 bed condos in Irvine under 1M", "houses in Pasadena with a pool"
+- **Follow-ups in an ongoing search** — "under $1.2M", "make it 4 beds", "what about San Diego", "start over"
+- **Market questions** — "how's the market in Pasadena", "median price in Long Beach", "days on market in Irvine"
+- **Similar listings** — "homes like 419 Tangelo", "more like that first one"
+- **Vibe / description search** — "charming craftsman with character", "cozy beach cottage"
+- **Terminology and field meanings** — "what does DOM mean", "what is a list-to-close ratio", "what columns are in california_sold"
+- **Mixed requests** — "find affordable homes in Pasadena and tell me whether prices are rising" runs the search and market agents together and merges the result
+
+This is the required path for all of the above. Do not use web search or external
+sites like Zillow or Redfin for listing, market, or terminology data.
+
+## How to run
+
+Use the `exec` tool. Replace USER_ID with the sender's identifier (their phone
+number if you have it, otherwise `default`) and MESSAGE with the user's exact
+message text. Keep the quotes.
+
+```bash
+cd ~/Desktop/idx-property-ai-agent && ./node_modules/.bin/tsx src/orchestrate.ts "USER_ID" "MESSAGE"
+```
+
+Return the command's printed output to the user exactly as printed.
+
+Rules:
+- Return only what the command prints. Do not invent, add, or supplement results
+  from any other source.
+- The command may reply with a follow-up question ("What's your budget?") instead
+  of results. That is expected — relay it as-is and pass the user's answer back
+  into the same command on the next turn.
+- Always use the same USER_ID for the same person across a conversation, or their
+  remembered search is lost and follow-ups like "make it 4 beds" will not work.
+- Knowledge answers end with a "(sourced from: ...)" line. Don't strip it.
+- If the assistant says it doesn't have information on something, relay that
+  rather than answering from general knowledge.
+
+## Notes
+
+- Listing data is a fixed MLS snapshot, so status reflects the export date, not
+  today's live market. Market figures show the actual date range they cover.
+- "pool" means a private pool (`PoolPrivateYN`), which is rare for condos — most
+  condo pools are shared community amenities.
+- "Sold-to-list" above 100% means homes sold above asking on average; below 100%
+  means below asking. This is market data, not buy/sell or investment advice.
+- Recommendation scores are out of 100: up to 60 for structured similarity
+  (price, beds, city, sqft) and up to 40 for description similarity. Price
+  assessments ("below comps", "above comps") compare against sold comps in the
+  same city and size range — a data comparison, not investment advice.
+- California real estate law and disclosure requirements are not indexed. If
+  asked, say it's out of scope rather than implying legal authority.
+- The first search in a new city embeds its listings, which takes a few seconds;
+  later searches in that city are fast.

@@ -1,7 +1,8 @@
 {
   "devDependencies": {
     "@types/node": "^26.1.0",
-    "tsx": "^4.23.0"
+    "tsx": "^4.23.0",
+    "typescript": "^7.0.2"
   },
   "dependencies": {
     "dotenv": "^17.4.2",
@@ -9,7 +10,7 @@
     "openai": "^7.1.0"
   },
   "scripts": {
-    "test": "tsx skills/property-search/parsePropertyQuery.test.ts && tsx db/queries.test.ts && tsx db/sessions.test.ts && tsx db/marketStats.test.ts && tsx db/recommend.test.ts",
+    "test": "for f in tests/*.test.ts; do echo \"\\n=== $f ===\"; ./node_modules/.bin/tsx \"$f\" || exit 1; done",
     "typecheck": "tsc --noEmit"
   }
 }
