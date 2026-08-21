@@ -2,8 +2,8 @@
 // Pure helpers for market analytics. No database access and no side effects,
 // so these can be imported by tests (and by marketStats.ts) safely.
 
-import { parsePropertyQuery } from "../skills/property-search/parsePropertyQuery";
-
+import { parsePropertyQuery } from "./parsePropertyQuery";
+import { MarketStats, MonthlyPoint } from "../agentTypes";
 export function money(n: number | null): string {
   return n != null ? `$${Math.round(n).toLocaleString()}` : "N/A";
 }
@@ -87,3 +87,81 @@ export function resolveLocation(rawMessage: string): {
   return { city, zip, place };
 }
 
+export interface SoldStatInput {
+  close: number;
+  list: number;
+  area: number;
+  dom: number;
+  date: string; // "YYYY-MM-DD"
+}
+
+// Normalize raw DB rows: coerce numbers, drop rows with no close price or a
+// malformed date. Kept separate so the DB row shape stays out of the pure math.
+export function normalizeSoldRows(
+  rows: Array<{ ClosePrice: any; ListPrice: any; LivingArea: any; DaysOnMarket: any; CloseDate: any }>
+): SoldStatInput[] {
+  return rows
+    .map((r) => ({
+      close: Number(r.ClosePrice),
+      list: Number(r.ListPrice),
+      area: Number(r.LivingArea),
+      dom: Number(r.DaysOnMarket),
+      date: String(r.CloseDate).slice(0, 10),
+    }))
+    .filter((r) => r.close > 0 && /^\d{4}-\d{2}-\d{2}$/.test(r.date));
+}
+
+export function computeMarketStats(
+  place: string,
+  data: SoldStatInput[],
+  activeInventory: number
+): MarketStats | null {
+  if (data.length === 0) return null;
+
+  // 12-month window measured from the latest sale IN THE DATA, not today's
+  // calendar date — the comps are a snapshot, so "last 12 months of today"
+  // could be empty. Falls back to the full set if the window is too thin.
+  const maxDate = data[data.length - 1].date;
+  const windowStart = monthsBefore(maxDate, 12);
+  const recent = data.filter((r) => r.date >= windowStart);
+  const use = recent.length >= 5 ? recent : data;
+
+  const closes = use.map((r) => r.close);
+  const ppsf = use.filter((r) => r.area > 0).map((r) => r.close / r.area);
+  const dom = use.filter((r) => Number.isFinite(r.dom) && r.dom >= 0).map((r) => r.dom);
+  const ltc = use.filter((r) => r.list > 0).map((r) => (r.close / r.list) * 100);
+
+  const byMonth = new Map<string, number[]>();
+  for (const r of use) {
+    const m = r.date.slice(0, 7);
+    if (!byMonth.has(m)) byMonth.set(m, []);
+    byMonth.get(m)!.push(r.close);
+  }
+  const months = [...byMonth.keys()].sort().slice(-12);
+  const monthly: MonthlyPoint[] = months.map((m) => {
+    const vals = byMonth.get(m)!;
+    return {month: m, median: median(vals), count: vals.length};
+  });
+
+  let directionPct: number | null = null;
+  if (monthly.length >= 2) {
+    const first = monthly[0].median;
+    const last = monthly[monthly.length - 1].median;
+    if (first > 0) directionPct = ((last - first) / first) * 100;
+  }
+
+  return {
+    place,
+    soldCount: use.length,
+    rangeStart: use[0].date,
+    rangeEnd: use[use.length - 1].date,
+    medianClose: median(closes),
+    avgClose: avg(closes),
+    avgPpsf: ppsf.length ? avg(ppsf) : null,
+    avgDom: dom.length ? avg(dom) : null,
+    avgLtc: ltc.length ? avg(ltc) : null,
+    activeInventory,
+    monthly,
+    directionPct,
+  };
+}

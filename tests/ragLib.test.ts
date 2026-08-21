@@ -7,7 +7,7 @@ import {
   rankChunks,
   buildGroundedPrompt,
   IndexedChunk,
-} from "./ragLib";
+} from "../src/lib/ragLib";
 
 let passed = 0, failed = 0;
 function check(name: string, got: unknown, want: unknown) {

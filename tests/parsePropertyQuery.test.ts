@@ -5,7 +5,7 @@
 // Each expected object is merged over an all-null baseline, so a test fails
 // if the parser MISSES a field OR extracts one it should not have.
 
-import { parsePropertyQuery, PropertyFilters } from "./parsePropertyQuery";
+import { parsePropertyQuery, PropertyFilters } from "../src/lib/parsePropertyQuery";
 
 const NULL_FILTERS: PropertyFilters = {
   city: null,

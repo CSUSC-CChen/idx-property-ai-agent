@@ -7,7 +7,7 @@
 // message, so it would remember nothing between turns. Persisting to disk is
 // what actually makes the conversation multi-turn in this architecture.
 
-import { PropertyFilters } from "../skills/property-search/parsePropertyQuery";
+import { PropertyFilters } from "./lib/parsePropertyQuery";
 import * as fs from "fs";
 import * as path from "path";
 import * as os from "os";

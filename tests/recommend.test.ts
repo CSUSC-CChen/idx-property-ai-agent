@@ -1,6 +1,6 @@
 // recommend.test.ts — Week 7 validation
 // Covers the hybrid scoring and comp assessment. Pure logic, no DB/OpenAI.
-import { structuredScore, hybridScore, assessComp, ScorableListing } from "./recommendLib";
+import { structuredScore, hybridScore, assessComp, ScorableListing } from "../src/lib/recommendLib";
 
 let passed = 0, failed = 0;
 function check(name: string, got: unknown, want: unknown) {

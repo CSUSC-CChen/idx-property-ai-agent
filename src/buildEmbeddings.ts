@@ -13,7 +13,7 @@
 // produce a large cache file, so this script caps how many it pulls.
 
 import "dotenv/config";
-import { query, closePool } from "./db";
+import { query, closePool } from "./db/db";
 import {
   buildListingText,
   embedBatch,

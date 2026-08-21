@@ -2,7 +2,7 @@
 // Parameterized queries over the two MLS tables, plus a card formatter.
 // Filters come from the Week 2 parser (PropertyFilters).
 
-import { PropertyFilters } from "../skills/property-search/parsePropertyQuery";
+import { PropertyFilters } from "../lib/parsePropertyQuery";
 import { query } from "./db";
 
 // ── Active listings (rets_property) ────────────────────────────────

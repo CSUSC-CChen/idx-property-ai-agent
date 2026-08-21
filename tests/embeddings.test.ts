@@ -1,5 +1,5 @@
 // embeddings.test.ts — Week 6 validation (remarks-only)
-import { cosineSimilarity, buildListingText, rankBySimilarity } from "./embeddings";
+import { cosineSimilarity, buildListingText, rankBySimilarity } from "../src/embeddings";
 
 let passed = 0, failed = 0;
 function check(name: string, got: unknown, want: unknown) {

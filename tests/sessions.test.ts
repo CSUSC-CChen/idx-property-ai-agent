@@ -15,7 +15,7 @@ import {
   mergeFilters,
   isResetRequest,
   filterCount,
-} from "./sessions";
+} from "../src/sessions";
 import { PropertyFilters } from "../skills/property-search/parsePropertyQuery";
 
 const EMPTY: PropertyFilters = {

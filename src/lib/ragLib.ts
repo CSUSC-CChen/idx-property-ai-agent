@@ -4,7 +4,7 @@
 // it's fully unit-testable. I/O (reading knowledge/ docs, calling the
 // embeddings API, calling the chat model) lives in rag.ts.
 
-import { cosineSimilarity } from "./embeddings";
+import { cosineSimilarity } from "../embeddings";
 
 export interface DocSource {
   source: string;  // display name of the source document, e.g. "mls-field-definitions.md"

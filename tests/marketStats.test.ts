@@ -12,7 +12,7 @@ import {
   monthsBefore,
   fallbackCity,
   resolveLocation,
-} from "./marketStatsLib";
+} from "../src/lib/marketStatsLib";
 
 let passed = 0;
 let failed = 0;
