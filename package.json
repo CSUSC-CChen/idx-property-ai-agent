@@ -10,7 +10,7 @@
     "openai": "^7.1.0"
   },
   "scripts": {
-    "test": "for f in tests/*.test.ts; do echo \"\\n=== $f ===\"; ./node_modules/.bin/tsx \"$f\" || exit 1; done",
+    "test": "node scripts/run-tests.mjs",
     "typecheck": "tsc --noEmit"
   }
 }

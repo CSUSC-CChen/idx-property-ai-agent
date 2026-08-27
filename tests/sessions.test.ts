@@ -16,7 +16,7 @@ import {
   isResetRequest,
   filterCount,
 } from "../src/sessions";
-import { PropertyFilters } from "../skills/property-search/parsePropertyQuery";
+import { PropertyFilters } from "../src/lib/parsePropertyQuery";
 
 const EMPTY: PropertyFilters = {
   city: null,
