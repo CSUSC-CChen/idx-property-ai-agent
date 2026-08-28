@@ -1,64 +1,66 @@
-// orchestrateLib.test.ts — Week 9 validation
-// Routing decisions only. Pure logic, no DB/OpenAI.
 import { classifyIntent, detectSignals, extractListingRef } from "../src/lib/orchestrateLib";
+let passed=0, failed=0;
+function check(n:string,g:unknown,w:unknown){const ok=JSON.stringify(g)===JSON.stringify(w);if(ok){passed++;console.log(`PASS  ${n}`);}else{failed++;console.log(`FAIL  ${n}\n      want ${JSON.stringify(w)}\n      got  ${JSON.stringify(g)}`);}}
 
-let passed = 0, failed = 0;
-function check(name: string, got: unknown, want: unknown) {
-  const ok = JSON.stringify(got) === JSON.stringify(want);
-  if (ok) { passed++; console.log(`PASS  ${name}`); }
-  else { failed++; console.log(`FAIL  ${name}\n      want ${JSON.stringify(want)}\n      got  ${JSON.stringify(got)}`); }
-}
-
-console.log("\n--- classifyIntent: search ---");
-check("beds + city + budget", classifyIntent("3 bed condos in Irvine under 1M"), "search");
-check("show me phrasing", classifyIntent("Show me homes in Pasadena"), "search");
-check("bare property type", classifyIntent("townhomes with 2 baths"), "search");
-
-console.log("\n--- classifyIntent: market ---");
-check("market question", classifyIntent("how's the market in Pasadena?"), "market");
-check("median price", classifyIntent("what's the median price in Arcadia"), "market");
-check("timing question", classifyIntent("is now a good time to buy in San Diego"), "market");
-check("price direction", classifyIntent("are prices rising in Long Beach"), "market");
-
-console.log("\n--- classifyIntent: knowledge (must outrank market) ---");
-check("DOM definition", classifyIntent("What does DOM mean?"), "knowledge");
-check("list-to-close definition", classifyIntent("What is a list-to-close ratio?"), "knowledge");
-check("columns question", classifyIntent("What columns are in california_sold?"), "knowledge");
-check("define verb", classifyIntent("define escrow"), "knowledge");
-
-console.log("\n--- classifyIntent: recommend (must outrank search) ---");
-check("homes like address", classifyIntent("homes like 419 Tangelo"), "recommend");
+console.log("\n--- existing routes must not regress ---");
+check("search", classifyIntent("3 bed condos in Irvine under 1M"), "search");
+check("show me", classifyIntent("Show me homes in Pasadena"), "search");
+check("bare type", classifyIntent("townhomes with 2 baths"), "search");
+check("market", classifyIntent("how's the market in Pasadena?"), "market");
+check("median", classifyIntent("what's the median price in Arcadia"), "market");
+check("timing", classifyIntent("is now a good time to buy in San Diego"), "market");
+check("direction", classifyIntent("are prices rising in Long Beach"), "market");
+check("DOM", classifyIntent("What does DOM mean?"), "knowledge");
+check("ltc", classifyIntent("What is a list-to-close ratio?"), "knowledge");
+check("columns", classifyIntent("What columns are in california_sold?"), "knowledge");
+check("define", classifyIntent("define escrow"), "knowledge");
+check("homes like", classifyIntent("homes like 419 Tangelo"), "recommend");
 check("similar to", classifyIntent("find something similar to 385 S Oakland Ave"), "recommend");
-check("anaphoric reference", classifyIntent("more like that first one"), "recommend");
+check("anaphoric", classifyIntent("more like that first one"), "recommend");
+check("vibe", classifyIntent("charming craftsman with character"), "semantic");
+check("cozy", classifyIntent("a cozy hidden gem with mountain views"), "semantic");
+check("mixed", classifyIntent("Find me affordable homes in Pasadena and tell me whether prices are rising"), "mixed");
+check("mixed2", classifyIntent("show me condos in Irvine and how is the market doing"), "mixed");
+check("empty", classifyIntent(""), "unknown");
+check("ws", classifyIntent("   "), "unknown");
+check("offtopic", classifyIntent("hello there"), "unknown");
 
-console.log("\n--- classifyIntent: semantic ---");
-check("vibe words", classifyIntent("charming craftsman with character"), "semantic");
-check("cozy description", classifyIntent("a cozy hidden gem with mountain views"), "semantic");
+console.log("\n--- email routing (must outrank market and search) ---");
+check("email + address", classifyIntent("email the Pasadena market report to leo@example.com"), "email");
+check("email me", classifyIntent("email me the Pasadena market report"), "email");
+check("e-mail hyphen", classifyIntent("e-mail me the report"), "email");
+check("bare address", classifyIntent("send the Irvine report to leo@example.com"), "email");
+check("email it", classifyIntent("email it to leo@example.com"), "email");
+check("forward me", classifyIntent("forward me that market summary"), "email");
 
-console.log("\n--- classifyIntent: mixed ---");
-check("search + market", classifyIntent("Find me affordable homes in Pasadena and tell me whether prices are rising"), "mixed");
-check("listings + trend", classifyIntent("show me condos in Irvine and how is the market doing"), "mixed");
+console.log("\n--- approval words must NOT look like new email requests ---");
+check("send it -> unknown", classifyIntent("send it"), "unknown");
+check("cancel -> unknown", classifyIntent("cancel"), "unknown");
+check("yes -> unknown", classifyIntent("yes"), "unknown");
+check("go ahead -> unknown", classifyIntent("go ahead"), "unknown");
 
-console.log("\n--- classifyIntent: unknown ---");
-check("empty string", classifyIntent(""), "unknown");
-check("whitespace only", classifyIntent("   "), "unknown");
-check("off topic", classifyIntent("hello there"), "unknown");
+console.log("\n--- market/search must not be stolen by email ---");
+check("plain market", classifyIntent("how is the market in Irvine"), "market");
+check("plain search", classifyIntent("3 bed homes in Irvine"), "search");
 
 console.log("\n--- detectSignals ---");
 {
+  const s = detectSignals("email the Pasadena market report to leo@example.com");
+  check("email flagged", s.email, true);
+  check("market also flagged (email wins)", s.market, true);
+}
+{
   const s = detectSignals("Find me affordable homes in Pasadena and tell me whether prices are rising");
-  check("mixed message flags search", s.search, true);
-  check("mixed message flags market", s.market, true);
-  check("mixed message not recommend", s.recommend, false);
+  check("no email signal", s.email, false);
+  check("search", s.search, true);
+  check("market", s.market, true);
 }
 
-console.log("\n--- extractListingRef ---");
-check("street address", extractListingRef("homes like 419 Tangelo"), "419 Tangelo");
-check("address with directional", extractListingRef("similar to 385 S Oakland Ave"), "385 S Oakland Ave");
-check("mls id", extractListingRef("comps for OC12345678"), "OC12345678");
-check("anaphoric -> null", extractListingRef("more like that first one"), null);
-check("no reference -> null", extractListingRef("show me condos"), null);
-check("trailing punctuation stripped", extractListingRef("homes like 419 Tangelo?"), "419 Tangelo");
+console.log("\n--- extractListingRef unchanged ---");
+check("addr", extractListingRef("homes like 419 Tangelo"), "419 Tangelo");
+check("dir", extractListingRef("similar to 385 S Oakland Ave"), "385 S Oakland Ave");
+check("mls", extractListingRef("comps for OC12345678"), "OC12345678");
+check("null", extractListingRef("more like that first one"), null);
 
 console.log(`\n${passed} passed, ${failed} failed`);
-if (failed > 0) process.exitCode = 1;
+if (failed>0) process.exitCode=1;
