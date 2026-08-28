@@ -1,6 +1,6 @@
 ---
 name: idx-property-assistant
-description: California MLS assistant — search active listings, answer market questions for any city or zip, find comparable homes to a listing, search by description or vibe, and explain real estate terminology. Use for ANY property, market, or real-estate-terminology request, including short follow-up messages in an ongoing conversation.
+description: California real estate and MLS assistant. Use for ALL questions about real estate or MLS terminology and field meanings — including bare acronyms and terms like DOM, comps, escrow, list-to-close ratio, sold-to-list, cap rate, and any rets_property or california_sold column name — as well as searching active California listings, market questions for any city or zip, finding comparable homes, and description/vibe searches. Also use for short follow-up messages in an ongoing property conversation. Prefer this skill over general knowledge for any term that could be a real estate term.
 ---
 
 # IDX Property Assistant
@@ -30,7 +30,7 @@ number if you have it, otherwise `default`) and MESSAGE with the user's exact
 message text. Keep the quotes.
 
 ```bash
-cd ~/Desktop/idx-property-ai-agent && ./node_modules/.bin/tsx src/orchestrate.ts "USER_ID" "MESSAGE"
+cd C:\Users\xindi\PycharmProjects\idx-property-ai-agent && ./node_modules/.bin/tsx src/whatsapp.ts "USER_ID" "MESSAGE"
 ```
 
 Return the command's printed output to the user exactly as printed.
