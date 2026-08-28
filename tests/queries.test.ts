@@ -6,7 +6,7 @@
 //   npx tsx db/queries.test.ts
 
 import { buildListingQuery, formatCard, ListingRow } from "../src/db/queries";
-import { PropertyFilters } from "../skills/property-search/parsePropertyQuery";
+import { PropertyFilters } from "../src/lib/parsePropertyQuery";
 
 const EMPTY: PropertyFilters = {
   city: null,

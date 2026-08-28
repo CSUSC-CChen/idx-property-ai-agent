@@ -131,8 +131,8 @@ EMAIL_PASSWORD=
 | 6 | Embeddings & vector search (semantic matching) | ✅ |
 | 7 | Recommendation engine (hybrid scoring) | ✅ |
 | 8 | RAG pipeline (MLS field definitions, terminology) | ✅ |
-| 9 | Multi-agent orchestration (coordinator routing) | ⬜ |
-| 10 | WhatsApp communication layer (end-to-end) | ⬜ |
+| 9 | Multi-agent orchestration (coordinator routing) | ✅ |
+| 10 | WhatsApp communication layer (end-to-end) | ✅ |
 | 11 | Email agents with human-in-the-loop approval gate | ⬜ |
 | 12 | Capstone demo: full production assistant | ⬜ |
 

@@ -135,7 +135,7 @@ export async function ragAgent(question: string): Promise<AgentResult> {
 if (require.main === module) {
   (async () => {
     const result = await ragAgent(process.argv.slice(2).join(" ").trim());
-    const { formatResult } = await import("./agentFormat");
+    const { formatResult } = await import("../lib/agentFormat");
     console.log(formatResult(result));
   })().catch((err) => {
     console.error("RAG query failed:", err.message);
