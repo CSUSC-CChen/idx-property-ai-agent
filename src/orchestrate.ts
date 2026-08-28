@@ -1,8 +1,8 @@
-// orchestrate.ts — Week 9
-// Single entry point across all five agents. Classifies intent, routes to the
+// orchestrate.ts — Week 9, extended in Week 11
+// Single entry point across all agents. Classifies intent, routes to the
 // right agent (or several in parallel), and renders one reply.
 //
-//   ./node_modules/.bin/tsx db/orchestrate.ts "<userId>" "<message>"
+//   ./node_modules/.bin/tsx src/orchestrate.ts "<userId>" "<message>"
 //
 // WHY IN-PROCESS FUNCTION CALLS, NOT exec SUBPROCESSES:
 // The "mixed" case runs two agents concurrently. As separate processes each
@@ -17,15 +17,28 @@ import { getSession } from "./sessions";
 import { AgentResult, Intent } from "./agentTypes";
 import { classifyIntent, extractListingRef } from "./lib/orchestrateLib";
 import { formatResult, formatCombined } from "./lib/agentFormat";
+import { getPendingDraft } from "./lib/emailDrafts";
 
 import { propertySearchAgent } from "./agents/propertySearch";
 import { marketStatsAgent } from "./agents/marketStats";
 import { semanticAgent } from "./agents/semanticSearch";
 import { recommendAgent } from "./agents/recommend";
 import { ragAgent } from "./agents/rag";
+import { emailAgent } from "./agents/email";
 
 export async function orchestrate(message: string, userId: string): Promise<string> {
   const msg = (message || "").trim();
+
+  // ── Week 11: pending approval takes precedence over intent classification.
+  // "send it", "cancel", and "yes" carry no email signal at all — classified
+  // on their own they come back "unknown" and would hit the help text, so the
+  // user could never approve anything. Whenever a draft is waiting, the next
+  // message is an answer to "send or cancel?", not a new request. This check
+  // MUST come before classifyIntent, not inside the switch.
+  if (getPendingDraft(userId)) {
+    return formatResult(await emailAgent(msg, userId));
+  }
+
   const intent: Intent = classifyIntent(msg);
 
   switch (intent) {
@@ -40,6 +53,11 @@ export async function orchestrate(message: string, userId: string): Promise<stri
 
     case "knowledge":
       return formatResult(await ragAgent(msg));
+
+    case "email":
+      // Composes a draft and returns a preview. Never sends — sending requires
+      // a second message, handled by the pending-draft branch above.
+      return formatResult(await emailAgent(msg, userId));
 
     case "recommend": {
       // Prefer an address/MLS id stated in the message. If the user is
@@ -71,7 +89,8 @@ export async function orchestrate(message: string, userId: string): Promise<stri
         "• describe a vibe — \"charming craftsman with character\"\n" +
         "• check a market — \"how's the market in Pasadena?\"\n" +
         "• find similar homes — \"homes like 419 Tangelo\"\n" +
-        "• explain a term — \"what is a list-to-close ratio?\""
+        "• explain a term — \"what is a list-to-close ratio?\"\n" +
+        "• email a report — \"email the Pasadena market report to me@example.com\""
       );
   }
 }
@@ -84,7 +103,7 @@ if (require.main === module) {
     const userId = (process.argv[2] || "default").trim();
     const message = process.argv.slice(3).join(" ").trim();
     if (!message) {
-      console.log('Usage: tsx db/orchestrate.ts "<userId>" "<message>"');
+      console.log('Usage: tsx src/orchestrate.ts "<userId>" "<message>"');
       return;
     }
     console.log(await orchestrate(message, userId));

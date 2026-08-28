@@ -67,5 +67,6 @@ export type Intent =
   | "market"
   | "recommend"
   | "knowledge"
+  | "email"
   | "mixed"
   | "unknown";
