@@ -1,15 +1,18 @@
 {
   "devDependencies": {
     "@types/node": "^26.1.0",
-    "tsx": "^4.23.0"
+    "@types/nodemailer": "^8.0.1",
+    "tsx": "^4.23.0",
+    "typescript": "^7.0.2"
   },
   "dependencies": {
     "dotenv": "^17.4.2",
     "mysql2": "^3.22.5",
+    "nodemailer": "^9.0.6",
     "openai": "^7.1.0"
   },
   "scripts": {
-    "test": "tsx skills/property-search/parsePropertyQuery.test.ts && tsx db/queries.test.ts && tsx db/sessions.test.ts && tsx db/marketStats.test.ts && tsx db/recommend.test.ts",
+    "test": "node scripts/run-tests.mjs",
     "typecheck": "tsc --noEmit"
   }
 }
