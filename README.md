@@ -234,7 +234,7 @@ without a live database or API calls.
 | 9 | Multi-agent orchestration (coordinator routing) | ✅ |
 | 10 | WhatsApp communication layer (end-to-end) | ✅ |
 | 11 | Email agents with human-in-the-loop approval gate | ✅ |
-| 12 | Capstone demo: full production assistant | 🚧 |
+| 12 | Capstone demo: full production assistant | ✅ |
 
 ---
 
